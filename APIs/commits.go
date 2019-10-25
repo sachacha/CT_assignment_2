@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -23,6 +24,13 @@ type ReposInfo struct {
 	Commits    int    `json:"commits"`
 }
 
+// to sort by commits count at the end
+type ByCommitsCount []ReposInfo
+
+func (a ByCommitsCount) Len() int           { return len(a) }
+func (a ByCommitsCount) Less(i, j int) bool { return a[i].Commits > a[j].Commits } // which is More for our purpose
+func (a ByCommitsCount) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+
 type CommitsAnswer struct {
 	Repos []ReposInfo `json:"repos"`
 	Auth  bool        `json:"auth"`
@@ -38,7 +46,8 @@ func GetProjectsInfo(w http.ResponseWriter) ([]float64, []string) {
 	for lastPageNotReached {
 		j++
 
-		var getArgument = fmt.Sprintf("https://git.gvk.idi.ntnu.no/api/v4/projects?page=%c", j)
+		jString := strconv.Itoa(j)
+		var getArgument = fmt.Sprintf("https://git.gvk.idi.ntnu.no/api/v4/projects?page=%s", jString)
 
 		resp, err := http.Get(getArgument)
 		if err != nil {
@@ -63,16 +72,22 @@ func GetProjectsInfo(w http.ResponseWriter) ([]float64, []string) {
 			return ids, paths
 		}
 
-		var projectsMap = projectsJson.(map[string]interface{})
+		var projectsResult = projectsJson.([]interface{})
 
-		var lenProjectsMap = len(projectsMap)
+		var lenProjects = len(projectsResult)
+
+		projects := make(map[int]map[string]interface{})
+
+		for i := 0; i < lenProjects; i++ {
+			projects[i] = projectsResult[i].(map[string]interface{})
+		}
 
 		i := 0
-		for i < lenProjectsMap {
-			if id, ok := projectsMap["id"].(float64); ok {
+		for i < lenProjects {
+			if id, ok := projects[i]["id"].(float64); ok {
 				ids = append(ids, id)
 			}
-			if path, ok1 := projectsMap["path_with_namespace"].(string); ok1 {
+			if path, ok1 := projects[i]["path_with_namespace"].(string); ok1 {
 				paths = append(paths, path)
 			}
 
@@ -97,7 +112,8 @@ func GetProjectsInfoWithAuth(w http.ResponseWriter, auth string) ([]float64, []s
 	for lastPageNotReached {
 		j++
 
-		var getArgument = fmt.Sprintf("https://git.gvk.idi.ntnu.no/api/v4/projects?page=%c&private_token=%s", j, auth)
+		jString := strconv.Itoa(j)
+		var getArgument = fmt.Sprintf("https://git.gvk.idi.ntnu.no/api/v4/projects?page=%s&private_token=%s", jString, auth)
 
 		resp, err := http.Get(getArgument)
 		if err != nil {
@@ -122,16 +138,22 @@ func GetProjectsInfoWithAuth(w http.ResponseWriter, auth string) ([]float64, []s
 			return ids, paths
 		}
 
-		var projectsMap = projectsJson.(map[string]interface{})
+		var projectsResult = projectsJson.([]interface{})
 
-		var lenProjectsMap = len(projectsMap)
+		var lenProjects = len(projectsResult)
+
+		projects := make(map[int]map[string]interface{})
+
+		for i := 0; i < lenProjects; i++ {
+			projects[i] = projectsResult[i].(map[string]interface{})
+		}
 
 		i := 0
-		for i < lenProjectsMap {
-			if id, ok := projectsMap["id"].(float64); ok {
+		for i < lenProjects {
+			if id, ok := projects[i]["id"].(float64); ok {
 				ids = append(ids, id)
 			}
-			if path, ok1 := projectsMap["path_with_namespace"].(string); ok1 {
+			if path, ok1 := projects[i]["path_with_namespace"].(string); ok1 {
 				paths = append(paths, path)
 			}
 
@@ -205,11 +227,14 @@ func HandlerCommits(w http.ResponseWriter, r *http.Request) {
 		for lastPageNotReached {
 			j++
 
+			jString := strconv.Itoa(j)
+			id := strconv.Itoa(int(projectsId[i]))
+
 			var getArgument string
 			if withAuth {
-				getArgument = fmt.Sprintf("https://git.gvk.idi.ntnu.no/api/v4/projects/%f/commits?page=%c&private_token=%s", projectsId[i], j, authRequest)
+				getArgument = fmt.Sprintf("https://git.gvk.idi.ntnu.no/api/v4/projects/%s/repository/commits?page=%s&private_token=%s", id, jString, authRequest)
 			} else {
-				getArgument = fmt.Sprintf("https://git.gvk.idi.ntnu.no/api/v4/projects/%f/commits?page=%c", projectsId[i], j)
+				getArgument = fmt.Sprintf("https://git.gvk.idi.ntnu.no/api/v4/projects/%s/repository/commits?page=%s", id, jString)
 			}
 
 			resp, err := http.Get(getArgument)
@@ -235,13 +260,17 @@ func HandlerCommits(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			var commitsMap = commitsJson.(map[string]interface{})
+			commitsMap, ok := commitsJson.([]interface{})
 
-			var lenCommitsMap = len(commitsMap)
+			if ok {
+				var lenCommitsMap = len(commitsMap)
 
-			commitsCount += lenCommitsMap
+				commitsCount += lenCommitsMap
 
-			if lenCommitsMap == 0 {
+				if lenCommitsMap == 0 {
+					lastPageNotReached = false
+				}
+			} else {
 				lastPageNotReached = false
 			}
 		}
@@ -254,9 +283,15 @@ func HandlerCommits(w http.ResponseWriter, r *http.Request) {
 		limitRequest = lenProjectsId
 	}
 
+	var repos []ReposInfo
+
 	for i := 0; i < lenProjectsId; i++ {
-		commitsAnswer.Repos = append(commitsAnswer.Repos, ReposInfo{paths[i], commitsCounts[i]})
+		repos = append(repos, ReposInfo{paths[i], commitsCounts[i]})
 	}
+
+	sort.Sort(ByCommitsCount(repos))
+
+	commitsAnswer.Repos = repos[0:limitRequest]
 
 	// encoding the answer
 	commitsAnswer.Auth = withAuth
