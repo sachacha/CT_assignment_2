@@ -15,6 +15,7 @@ func main() {
 		port = "8080"
 	}
 	http.HandleFunc("/repocheck/v1/commits", APIs.HandlerCommits)
+	http.HandleFunc("/repocheck/v1/languages", APIs.HandlerLanguages)
 	fmt.Println("Listening on port " + port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

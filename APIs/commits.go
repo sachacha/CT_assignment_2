@@ -10,15 +10,6 @@ import (
 	"strings"
 )
 
-func floatInSlice(a float64, list []float64) bool {
-	for _, b := range list {
-		if b == a {
-			return true
-		}
-	}
-	return false
-}
-
 type ReposInfo struct {
 	Repository string `json:"repository"`
 	Commits    int    `json:"commits"`
@@ -36,141 +27,9 @@ type CommitsAnswer struct {
 	Auth  bool        `json:"auth"`
 }
 
-func GetProjectsInfo(w http.ResponseWriter) ([]float64, []string) {
-	var ids []float64
-	var paths []string
-
-	lastPageNotReached := true
-	j := 0
-
-	for lastPageNotReached {
-		j++
-
-		jString := strconv.Itoa(j)
-		var getArgument = fmt.Sprintf("https://git.gvk.idi.ntnu.no/api/v4/projects?page=%s", jString)
-
-		resp, err := http.Get(getArgument)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return ids, paths
-		}
-
-		defer resp.Body.Close()
-
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return ids, paths
-		}
-
-		var projectsJson interface{}
-
-		err = json.Unmarshal(body, &projectsJson)
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return ids, paths
-		}
-
-		var projectsResult = projectsJson.([]interface{})
-
-		var lenProjects = len(projectsResult)
-
-		projects := make(map[int]map[string]interface{})
-
-		for i := 0; i < lenProjects; i++ {
-			projects[i] = projectsResult[i].(map[string]interface{})
-		}
-
-		i := 0
-		for i < lenProjects {
-			if id, ok := projects[i]["id"].(float64); ok {
-				ids = append(ids, id)
-			}
-			if path, ok1 := projects[i]["path_with_namespace"].(string); ok1 {
-				paths = append(paths, path)
-			}
-
-			i++
-		}
-
-		if i == 0 {
-			lastPageNotReached = false
-		}
-	}
-
-	return ids, paths
-}
-
-func GetProjectsInfoWithAuth(w http.ResponseWriter, auth string) ([]float64, []string) {
-	var ids []float64
-	var paths []string
-
-	lastPageNotReached := true
-	j := 0
-
-	for lastPageNotReached {
-		j++
-
-		jString := strconv.Itoa(j)
-		var getArgument = fmt.Sprintf("https://git.gvk.idi.ntnu.no/api/v4/projects?page=%s&private_token=%s", jString, auth)
-
-		resp, err := http.Get(getArgument)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return ids, paths
-		}
-
-		defer resp.Body.Close()
-
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return ids, paths
-		}
-
-		var projectsJson interface{}
-
-		err = json.Unmarshal(body, &projectsJson)
-
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
-			return ids, paths
-		}
-
-		var projectsResult = projectsJson.([]interface{})
-
-		var lenProjects = len(projectsResult)
-
-		projects := make(map[int]map[string]interface{})
-
-		for i := 0; i < lenProjects; i++ {
-			projects[i] = projectsResult[i].(map[string]interface{})
-		}
-
-		i := 0
-		for i < lenProjects {
-			if id, ok := projects[i]["id"].(float64); ok {
-				ids = append(ids, id)
-			}
-			if path, ok1 := projects[i]["path_with_namespace"].(string); ok1 {
-				paths = append(paths, path)
-			}
-
-			i++
-		}
-
-		if i == 0 {
-			lastPageNotReached = false
-		}
-	}
-
-	return ids, paths
-}
-
-var commitsAnswer = CommitsAnswer{}
-
 func HandlerCommits(w http.ResponseWriter, r *http.Request) {
+	var commitsAnswer = CommitsAnswer{}
+
 	http.Header.Add(w.Header(), "content-type", "application/json")
 	parts := strings.Split(r.URL.Path, "/")
 
