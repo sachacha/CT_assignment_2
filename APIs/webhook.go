@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	firebase "firebase.google.com/go"
 	//"firebase.google.com/go/auth"
@@ -106,6 +107,66 @@ func HandlerWebhook(w http.ResponseWriter, r *http.Request) {
 
 	default:
 		http.Error(w, "not implemented yet", http.StatusNotImplemented)
+		return
+	}
+}
+
+func HandlerWebhookWithId(w http.ResponseWriter, r *http.Request) {
+
+	// connection to the DB
+	ctx := context.Background()
+
+	sa := option.WithCredentialsFile("/home/sacha/Downloads/ctassignment2-firebase.json")
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer client.Close()
+
+	http.Header.Add(w.Header(), "content-type", "application/json")
+
+	parts := strings.Split(r.URL.Path, "/")
+
+	switch r.Method {
+	case http.MethodGet:
+
+		var registeredWebhooks = map[string]RegisteredWebhook{}
+
+		iter := client.Collection("webhooks").Documents(ctx)
+		for {
+			doc, err := iter.Next()
+			if err == iterator.Done {
+				break
+			}
+			if err != nil {
+				log.Fatalf("Failed to iterate: %v", err)
+			}
+
+			var registeredWebhook = RegisteredWebhook{}
+			registeredWebhook.ID = doc.Ref.ID
+			registeredWebhook.Event = doc.Data()["event"].(string)
+			registeredWebhook.Time = doc.CreateTime.String()
+
+			registeredWebhooks[doc.Ref.ID] = registeredWebhook
+		}
+
+		json.NewEncoder(w).Encode(registeredWebhooks[parts[4]])
+
+		return
+
+	case http.MethodDelete:
+
+		_, err := client.Collection("webhooks").Doc(parts[4]).Delete(ctx)
+		if err != nil {
+			log.Printf("An error has occurred: %s", err)
+		}
+
 		return
 	}
 }
