@@ -18,6 +18,7 @@ func main() {
 	http.HandleFunc("/repocheck/v1/languages", APIs.HandlerLanguages)
 	http.HandleFunc("/repocheck/v1/webhooks/", APIs.HandlerWebhookWithId)
 	http.HandleFunc("/repocheck/v1/webhooks", APIs.HandlerWebhook)
+	http.HandleFunc("/repocheck/v1/status", APIs.HandlerStatus)
 	fmt.Println("Listening on port " + port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
