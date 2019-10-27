@@ -1,18 +1,19 @@
 package APIs
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
 
+	"time"
+
 	firebase "firebase.google.com/go"
-	//"firebase.google.com/go/auth"
 	"golang.org/x/net/context"
 
 	"google.golang.org/api/iterator"
-	//"cloud.google.com/go/firestore"
 	"google.golang.org/api/option"
 )
 
@@ -168,5 +169,90 @@ func HandlerWebhookWithId(w http.ResponseWriter, r *http.Request) {
 		}
 
 		return
+	}
+}
+
+type InfoSend struct {
+	Event  string   `json:"event"`
+	Params []string `json:"params"`
+	Time   string   `json:"time"`
+}
+
+type RegisteredWebhookWithUrl struct {
+	ID    string `json:"id"`
+	Event string `json:"event"`
+	Url   string `json:"url"`
+}
+
+func WebhookChecking(w http.ResponseWriter, eventType string, parameters []string) {
+	// create the payload we will send
+	infoSend := InfoSend{eventType, parameters, time.Now().String()}
+
+	// connection to the DB
+	ctx := context.Background()
+
+	sa := option.WithCredentialsFile("/home/sacha/Downloads/ctassignment2-firebase.json")
+	app, err := firebase.NewApp(ctx, nil, sa)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	client, err := app.Firestore(ctx)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	defer client.Close()
+
+	// get the webhooks in the database
+	var registeredWebhooks = map[string]RegisteredWebhookWithUrl{}
+
+	iter := client.Collection("webhooks").Documents(ctx)
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			log.Fatalf("Failed to iterate: %v", err)
+		}
+
+		var registeredWebhook = RegisteredWebhookWithUrl{}
+		registeredWebhook.ID = doc.Ref.ID
+		registeredWebhook.Event = doc.Data()["event"].(string)
+		registeredWebhook.Url = doc.Data()["url"].(string)
+
+		registeredWebhooks[doc.Ref.ID] = registeredWebhook
+	}
+
+	// get those which are related to our eventType
+	var ids []string
+
+	for webhook := range registeredWebhooks {
+		if registeredWebhooks[webhook].Event == eventType {
+			ids = append(ids, registeredWebhooks[webhook].ID)
+		}
+	}
+
+	// send them our get request with the payload
+	lenIds := len(ids)
+
+	for i := 0; i < lenIds; i++ {
+		url := registeredWebhooks[ids[i]].Url
+
+		requestBody, err := json.Marshal(infoSend)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			continue
+		}
+
+		payload := bytes.NewBuffer(requestBody)
+
+		_, err1 := http.Post(url, "application/json", payload)
+
+		if err1 != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			continue
+		}
 	}
 }

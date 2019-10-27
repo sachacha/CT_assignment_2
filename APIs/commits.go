@@ -65,6 +65,18 @@ func HandlerCommits(w http.ResponseWriter, r *http.Request) {
 		withAuth = true
 	}
 
+	// webhook call
+	var parameters []string
+	if ok0 {
+		parameters = append(parameters, "limit")
+	}
+	if withAuth {
+		parameters = append(parameters, "authentification")
+	}
+
+	WebhookChecking(w, "commits", parameters)
+
+	// get all projects
 	var projectsId []float64
 	var paths []string
 	if withAuth {

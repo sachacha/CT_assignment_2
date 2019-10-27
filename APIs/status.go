@@ -23,6 +23,9 @@ type StatusAnswer struct {
 func HandlerStatus(w http.ResponseWriter, r *http.Request) {
 	http.Header.Add(w.Header(), "content-type", "application/json")
 
+	var parameters []string
+	WebhookChecking(w, "languages", parameters)
+
 	// check gitlab availability
 	respGit, errGit := http.Get("https://git.gvk.idi.ntnu.no/api/v4/projects")
 

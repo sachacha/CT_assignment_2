@@ -65,6 +65,17 @@ func HandlerLanguages(w http.ResponseWriter, r *http.Request) {
 		withAuth = true
 	}
 
+	// webhook call
+	var parameters []string
+	if ok0 {
+		parameters = append(parameters, "limit")
+	}
+	if withAuth {
+		parameters = append(parameters, "authentification")
+	}
+
+	WebhookChecking(w, "languages", parameters)
+
 	// get the payload if there is one
 	var projectsName []string
 	err := json.NewDecoder(r.Body).Decode(&projectsName)
