@@ -248,11 +248,13 @@ func WebhookChecking(w http.ResponseWriter, eventType string, parameters []strin
 
 		payload := bytes.NewBuffer(requestBody)
 
-		_, err1 := http.Post(url, "application/json", payload)
+		req, err1 := http.NewRequest(http.MethodGet, url, payload)
 
 		if err1 != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			continue
 		}
+		
+		_,_=http.DefaultClient.Do(req)
 	}
 }
