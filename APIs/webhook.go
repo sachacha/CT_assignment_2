@@ -32,12 +32,14 @@ type RegisteredWebhook struct {
 	Time  string `json:"time"`
 }
 
+var keyAddress = "C:\\Users\\user\\Downloads\\ctassignment2-firebase.json"
+
 func HandlerWebhook(w http.ResponseWriter, r *http.Request) {
 
 	// connection to the DB
 	ctx := context.Background()
 
-	sa := option.WithCredentialsFile("/home/sacha/Downloads/ctassignment2-firebase.json")
+	sa := option.WithCredentialsFile(keyAddress)
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
 		log.Fatalln(err)
@@ -117,7 +119,7 @@ func HandlerWebhookWithId(w http.ResponseWriter, r *http.Request) {
 	// connection to the DB
 	ctx := context.Background()
 
-	sa := option.WithCredentialsFile("/home/sacha/Downloads/ctassignment2-firebase.json")
+	sa := option.WithCredentialsFile(keyAddress)
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
 		log.Fatalln(err)
@@ -191,7 +193,7 @@ func WebhookChecking(w http.ResponseWriter, eventType string, parameters []strin
 	// connection to the DB
 	ctx := context.Background()
 
-	sa := option.WithCredentialsFile("/home/sacha/Downloads/ctassignment2-firebase.json")
+	sa := option.WithCredentialsFile(keyAddress)
 	app, err := firebase.NewApp(ctx, nil, sa)
 	if err != nil {
 		log.Fatalln(err)
