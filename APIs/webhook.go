@@ -32,7 +32,7 @@ type RegisteredWebhook struct {
 	Time  string `json:"time"`
 }
 
-var keyAddress = "/home/ctassignment2-firebase.json"
+var keyAddress = "/home/ubuntu/ctassignment2-firebase.json"
 
 func HandlerWebhook(w http.ResponseWriter, r *http.Request) {
 
