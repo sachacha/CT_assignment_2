@@ -23,6 +23,7 @@ func main() {
 			fmt.Println("Done !!")
 			ticker = time.Now()
 		}else {
+			fmt.Println(time.Since(ticker).Seconds())
 			http.HandleFunc("/repocheck/v1/commits", APIs.HandlerCommits)
 			http.HandleFunc("/repocheck/v1/languages", APIs.HandlerLanguages)
 			http.HandleFunc("/repocheck/v1/webhooks/", APIs.HandlerWebhookWithId)
