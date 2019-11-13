@@ -23,14 +23,14 @@ func main() {
 			fmt.Println("Done !!")
 			ticker = time.Now()
 		}else {
-			fmt.Println(time.Since(ticker).Seconds())
 			http.HandleFunc("/repocheck/v1/commits", APIs.HandlerCommits)
 			http.HandleFunc("/repocheck/v1/languages", APIs.HandlerLanguages)
 			http.HandleFunc("/repocheck/v1/webhooks/", APIs.HandlerWebhookWithId)
 			http.HandleFunc("/repocheck/v1/webhooks", APIs.HandlerWebhook)
 			http.HandleFunc("/repocheck/v1/status", APIs.HandlerStatus)
 			fmt.Println("Listening on port " + port)
-			log.Fatal(http.ListenAndServe(":"+port, nil))
 		}
 	}
+
+	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
