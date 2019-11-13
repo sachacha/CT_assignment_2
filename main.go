@@ -15,14 +15,14 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	
-	var ticker = time.NewTicker(10*time.Second)
+
+	var ticker = time.Now()
 
 	for {
-		select {
-		case <-ticker.C:
+		if time.Since(ticker).Seconds() >= 10 {
 			fmt.Println("Done !!")
-		default:
+			ticker = time.Now()
+		}else {
 			http.HandleFunc("/repocheck/v1/commits", APIs.HandlerCommits)
 			http.HandleFunc("/repocheck/v1/languages", APIs.HandlerLanguages)
 			http.HandleFunc("/repocheck/v1/webhooks/", APIs.HandlerWebhookWithId)
