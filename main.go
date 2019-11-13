@@ -15,12 +15,6 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
-	http.HandleFunc("/repocheck/v1/commits", APIs.HandlerCommits)
-	http.HandleFunc("/repocheck/v1/languages", APIs.HandlerLanguages)
-	http.HandleFunc("/repocheck/v1/webhooks/", APIs.HandlerWebhookWithId)
-	http.HandleFunc("/repocheck/v1/webhooks", APIs.HandlerWebhook)
-	http.HandleFunc("/repocheck/v1/status", APIs.HandlerStatus)
-	fmt.Println("Listening on port " + port)
 	
 	var ticker = time.NewTicker(10*time.Second)
 
@@ -28,8 +22,14 @@ func main() {
 		select {
 		case <-ticker.C:
 			fmt.Println("Done !!")
+		default:
+			http.HandleFunc("/repocheck/v1/commits", APIs.HandlerCommits)
+			http.HandleFunc("/repocheck/v1/languages", APIs.HandlerLanguages)
+			http.HandleFunc("/repocheck/v1/webhooks/", APIs.HandlerWebhookWithId)
+			http.HandleFunc("/repocheck/v1/webhooks", APIs.HandlerWebhook)
+			http.HandleFunc("/repocheck/v1/status", APIs.HandlerStatus)
+			fmt.Println("Listening on port " + port)
+			log.Fatal(http.ListenAndServe(":"+port, nil))
 		}
 	}
-	
-	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
