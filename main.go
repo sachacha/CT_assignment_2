@@ -22,11 +22,12 @@ func main() {
 	http.HandleFunc("/repocheck/v1/status", APIs.HandlerStatus)
 	fmt.Println("Listening on port " + port)
 	
-	var START_TIME = time.Now()
+	var ticker = time.NewTicker(10*time.Second)
 
 	for {
-		if (START_TIME.Second() > 10) {
-			fmt.Println("et de 10 !")
+		select {
+		case <-ticker.C:
+			fmt.Println("Done !!")
 		}
 	}
 	
