@@ -23,14 +23,14 @@ func main() {
 	http.HandleFunc("/repocheck/v1/status", APIs.HandlerStatus)
 	fmt.Println("Listening on port " + port)
 
-	var ticker = time.Now()
+	var ticker = time.NewTicker(1 * time.Second)
 
-	for {
-		if time.Since(ticker).Seconds() >= 10 {
-			fmt.Println("Done !!")
-			ticker = time.Now()
+	go func() {
+		for {
+			t := <-ticker.C
+			fmt.Println(t)
 		}
-	}
+	}()
 
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }
